@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ToolHub | 簡約工具箱</title>
+    <link rel="manifest" href="manifest.json">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #F5F2ED; color: #4A443F; }
+        .glass-card { background: rgba(255, 255, 255, 0.6); backdrop-filter: blur(10px); border: 1px solid rgba(210, 201, 194, 0.5); }
+        .btn-earth { background-color: #A69080; color: white; transition: all 0.3s; }
+        .btn-earth:hover { background-color: #8E7A6D; }
+    </style>
+</head>
+<body x-data="app()" x-init="init()">
+
+    <nav class="p-6 max-w-5xl mx-auto flex justify-between items-center">
+        <h1 class="text-xl font-semibold tracking-tight cursor-pointer" @click="view = 'home'">ToolHub.</h1>
+        <div x-show="view !== 'home'" @click="view = 'home'" class="cursor-pointer text-sm font-medium opacity-60 hover:opacity-100 italic">
+            ← 返回目錄
+        </div>
+    </nav>
+
+    <header x-show="view === 'home'" class="text-center py-12 px-4">
+        <p class="text-sm uppercase tracking-widest opacity-50 mb-2">Daily Utilities</p>
+        <h2 class="text-3xl font-light">專注於簡單的日常</h2>
+    </header>
+
+    <main class="max-w-5xl mx-auto px-6 pb-20">
+        
+        <div x-show="view === 'home'" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div @click="view = 'shorten'" class="glass-card p-8 rounded-3xl cursor-pointer hover:translate-y-[-4px] transition-transform">
+                <div class="w-10 h-10 mb-4 flex items-center justify-center bg-[#E8E2DE] rounded-full">🔗</div>
+                <h3 class="text-lg font-medium">縮短網址</h3>
+                <p class="text-sm opacity-60 mt-2">將冗長的連結變得簡潔易讀</p>
+            </div>
+            
+            <div @click="view = 'pomodoro'" class="glass-card p-8 rounded-3xl cursor-pointer hover:translate-y-[-4px] transition-transform">
+                <div class="w-10 h-10 mb-4 flex items-center justify-center bg-[#E8E2DE] rounded-full">⏳</div>
+                <h3 class="text-lg font-medium">番茄時鐘</h3>
+                <p class="text-sm opacity-60 mt-2">25 分鐘專注，提升工作效率</p>
+            </div>
+
+            <div @click="view = 'qrcode'" class="glass-card p-8 rounded-3xl cursor-pointer hover:translate-y-[-4px] transition-transform">
+                <div class="w-10 h-10 mb-4 flex items-center justify-center bg-[#E8E2DE] rounded-full">📱</div>
+                <h3 class="text-lg font-medium">QR Code 產生</h3>
+                <p class="text-sm opacity-60 mt-2">即時生成並下載二維碼</p>
+            </div>
+        </div>
+
+        <div x-show="view !== 'home'" class="max-w-2xl mx-auto glass-card p-8 sm:p-12 rounded-[2rem]">
+            
+            <div x-show="view === 'shorten'" class="space-y-6">
+                <h2 class="text-2xl font-semibold">縮短網址</h2>
+                <input type="text" x-model="shorten.input" placeholder="https://your-long-link.com" class="w-full bg-white/50 border-none p-4 rounded-xl focus:ring-2 ring-[#A69080] outline-none">
+                <button @click="generateShortUrl()" class="w-full btn-earth py-4 rounded-xl font-medium">生成短連結</button>
+                <div x-show="shorten.result" class="mt-4 p-4 bg-white/80 rounded-xl flex justify-between items-center">
+                    <span x-text="shorten.result" class="font-mono text-sm"></span>
+                    <button @click="copy(shorten.result)" class="text-xs text-[#A69080] font-bold">複製</button>
+                </div>
+            </div>
+
+            <div x-show="view === 'pomodoro'" class="text-center space-y-8">
+                <h2 class="text-2xl font-semibold" x-text="pomo.isBreak ? '休息時間' : '專注中'"></h2>
+                <div class="text-7xl font-light tracking-tighter" x-text="formatTime(pomo.timeLeft)"></div>
+                <div class="flex justify-center gap-4">
+                    <button @click="togglePomo()" x-text="pomo.running ? '暫停' : '開始'" class="btn-earth px-8 py-3 rounded-full"></button>
+                    <button @click="resetPomo()" class="border border-[#A69080] px-8 py-3 rounded-full text-[#A69080]">重設</button>
+                </div>
+            </div>
+
+            <div x-show="view === 'qrcode'" class="space-y-6 flex flex-col items-center">
+                <h2 class="text-2xl font-semibold self-start">QR Code 產生器</h2>
+                <input type="text" x-model="qr.text" @input="generateQR()" placeholder="輸入網址或文字..." class="w-full bg-white/50 border-none p-4 rounded-xl focus:ring-2 ring-[#A69080] outline-none">
+                <div id="qrcode-container" class="p-4 bg-white rounded-2xl shadow-inner min-h-[128px]"></div>
+                <button @click="downloadQR()" x-show="qr.text" class="btn-earth w-full py-4 rounded-xl">下載圖片</button>
+            </div>
+
+        </div>
+    </main>
+
+    <script>
+        function app() {
+            return {
+                view: 'home',
+                shorten: { input: '', result: '' },
+                pomo: { timeLeft: 1500, running: false, timer: null, isBreak: false },
+                qr: { text: '', instance: null },
+                
+                init() {
+                    this.qr.instance = new QRCode(document.getElementById("qrcode-container"), {
+                        width: 200, height: 200, colorDark: "#4A443F", colorLight: "#ffffff"
+                    });
+                },
+
+                // Shortener Logic (Demo version)
+                generateShortUrl() {
+                    if(!this.shorten.input) return;
+                    this.shorten.result = "https://tinyurl.com/demo-" + Math.random().toString(36).substring(7);
+                },
+
+                // Pomodoro Logic
+                togglePomo() {
+                    if (this.pomo.running) {
+                        clearInterval(this.pomo.timer);
+                    } else {
+                        this.pomo.timer = setInterval(() => {
+                            if (this.pomo.timeLeft > 0) {
+                                this.pomo.timeLeft--;
+                            } else {
+                                this.switchMode();
+                            }
+                        }, 1000);
+                    }
+                    this.pomo.running = !this.pomo.running;
+                },
+                switchMode() {
+                    this.pomo.isBreak = !this.pomo.isBreak;
+                    this.pomo.timeLeft = this.pomo.isBreak ? 300 : 1500;
+                },
+                resetPomo() {
+                    clearInterval(this.pomo.timer);
+                    this.pomo.running = false;
+                    this.pomo.isBreak = false;
+                    this.pomo.timeLeft = 1500;
+                },
+                formatTime(s) {
+                    return `${Math.floor(s/60)}:${(s%60).toString().padStart(2, '0')}`;
+                },
+
+                // QR Code Logic
+                generateQR() {
+                    this.qr.instance.clear();
+                    if(this.qr.text) this.qr.instance.makeCode(this.qr.text);
+                },
+                downloadQR() {
+                    const img = document.querySelector('#qrcode-container img');
+                    const link = document.createElement('a');
+                    link.download = 'qrcode.png';
+                    link.href = img.src;
+                    link.click();
+                },
+
+                copy(text) {
+                    navigator.clipboard.writeText(text);
+                    alert('已複製到剪貼簿');
+                }
+            }
+        }
+    </script>
+</body>
+</html>
